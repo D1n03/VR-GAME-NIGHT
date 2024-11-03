@@ -20,4 +20,9 @@ public class ChessPiece : MonoBehaviour
 
     private Vector3 desiredPosition;
     private Vector3 desiredScale;
+
+    private void Start()
+    {
+        transform.rotation = Quaternion.Euler((team == 0) ? new Vector3(-90, 0, -90) : new Vector3(-90, 0, 90));
+    }
 }
