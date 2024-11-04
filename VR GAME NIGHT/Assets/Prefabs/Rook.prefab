@@ -12,6 +12,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Rook
       objectReference: {fileID: 0}
+    - target: {fileID: 100000, guid: b66f4744e8bb24a448fcfa81a1781df5, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: b66f4744e8bb24a448fcfa81a1781df5, type: 3}
       propertyPath: m_LocalScale.x
       value: 1.5

@@ -12,6 +12,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Bishop
       objectReference: {fileID: 0}
+    - target: {fileID: 100000, guid: 25f5852bdc32bf74790bd0cfd333a532, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: 25f5852bdc32bf74790bd0cfd333a532, type: 3}
       propertyPath: m_LocalScale.x
       value: 1.5

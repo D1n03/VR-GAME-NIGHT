@@ -12,6 +12,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Queen
       objectReference: {fileID: 0}
+    - target: {fileID: 100000, guid: 63372fdecc46ca243992469e037a3b89, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: 63372fdecc46ca243992469e037a3b89, type: 3}
       propertyPath: m_LocalScale.x
       value: 1.5

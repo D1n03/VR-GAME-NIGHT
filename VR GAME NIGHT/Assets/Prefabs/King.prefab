@@ -12,6 +12,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: King
       objectReference: {fileID: 0}
+    - target: {fileID: 100000, guid: 6a678404afed8a84499291f5b2dc6a73, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: 6a678404afed8a84499291f5b2dc6a73, type: 3}
       propertyPath: m_LocalScale.x
       value: 1.5
