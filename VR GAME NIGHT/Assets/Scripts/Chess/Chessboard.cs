@@ -43,19 +43,19 @@ public class Chessboard : MonoBehaviour
         {
             // Get the indexes of the tile i have hit
             Vector2Int hitPosition = LookupTileIndex(info.transform.gameObject);
-            // If we're hovering a tile after not hovering any tiles
-            if ( currentHover == -Vector2Int.one)
-            {
-                currentHover = hitPosition;
-                tiles[hitPosition.x, hitPosition.y].layer = LayerMask.NameToLayer("Hover");
-            }
-            // If we are already hovering a tile, change the previous one
-            if (currentHover != hitPosition)
-            {
-                tiles[currentHover.x, currentHover.y].layer = LayerMask.NameToLayer("Tile");
-                currentHover = hitPosition;
-                tiles[hitPosition.x, hitPosition.y].layer = LayerMask.NameToLayer("Hover");
-            }
+            //// If we're hovering a tile after not hovering any tiles
+            //if ( currentHover == -Vector2Int.one)
+            //{
+            //    currentHover = hitPosition;
+            //    tiles[hitPosition.x, hitPosition.y].layer = LayerMask.NameToLayer("Hover");
+            //}
+            //// If we are already hovering a tile, change the previous one
+            //if (currentHover != hitPosition)
+            //{
+            //    tiles[currentHover.x, currentHover.y].layer = LayerMask.NameToLayer("Tile");
+            //    currentHover = hitPosition;
+            //    tiles[hitPosition.x, hitPosition.y].layer = LayerMask.NameToLayer("Hover");
+            //}
         } else
         {
             if (currentHover != -Vector2Int.one)
