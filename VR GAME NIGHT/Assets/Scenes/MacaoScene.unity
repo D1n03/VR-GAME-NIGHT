@@ -1409,50 +1409,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 393bcd737df938f4eae7841779535c76, type: 3}
---- !u!1 &352675700
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 352675702}
-  - component: {fileID: 352675701}
-  m_Layer: 0
-  m_Name: Game Manager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &352675701
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 352675700}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6f54dd846e263d54c8f00bf8156b7f1c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!4 &352675702
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 352675700}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.21600008, y: 1.0970001, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &379635354
 GameObject:
   m_ObjectHideFlags: 0
@@ -3624,6 +3580,12 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: df609b59433b36e4cbd387418d143b43, type: 3}
+--- !u!1 &1009453248 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: df609b59433b36e4cbd387418d143b43,
+    type: 3}
+  m_PrefabInstance: {fileID: 1009453247}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1025684719
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5172,7 +5134,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6bc5d8a21250dd84da9d2c25f31823c7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ghostPrefab: {fileID: 0}
+  ghostPrefab: {fileID: 1009453248}
   pointLight: {fileID: 1187479165}
   positions:
   - {fileID: 1357154992}
@@ -11570,7 +11532,6 @@ SceneRoots:
   - {fileID: 927664360}
   - {fileID: 1838658929}
   - {fileID: 1315433394}
-  - {fileID: 352675702}
   - {fileID: 543450652029059769}
   - {fileID: 1025684719}
   - {fileID: 685470944}
