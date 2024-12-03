@@ -8322,6 +8322,7 @@ MonoBehaviour:
   teamMaterials:
   - {fileID: 2100000, guid: 51b463cc8064cc9469ddff75ce2f120e, type: 2}
   - {fileID: 2100000, guid: 009357ae49832714996ca39269b30d31, type: 2}
+  whiteInteractor: {fileID: 5866666019956996506}
 --- !u!54 &983406066
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -29008,7 +29009,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 919132148056015304}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4253f32900bcc4d499d675566142ded0, type: 3}
   m_Name: 

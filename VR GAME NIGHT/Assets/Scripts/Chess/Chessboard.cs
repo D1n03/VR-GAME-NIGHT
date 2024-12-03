@@ -1,5 +1,8 @@
 using System;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.XR.Interaction.Toolkit;
+using UnityEngine.XR.OpenXR.Features.Interactions;
 
 public class Chessboard : MonoBehaviour
 {
@@ -12,21 +15,104 @@ public class Chessboard : MonoBehaviour
     [Header("Prefabs && Materials")]
     [SerializeField] private GameObject[] prefabs;
     [SerializeField] private Material[] teamMaterials;
+    [SerializeField] private XRDirectInteractor whiteInteractor;    // right hand of player White
+    // [SerializeField] private XRDirectInteractor blackInteractor; // right hand of player Black (if 2 players)
 
     // LOGIC
     private ChessPiece[,] chessPieces;
+    private ChessPiece currentlyDragging;
     private const int TILE_COUNT_X = 8;
     private const int TILE_COUNT_Y = 8;
     private GameObject[,] tiles;
     private Camera currentCamera;
     private Vector2Int currentHover;
     private Vector3 bounds;
+    private bool currentPlayerWhite = true;
 
     private void Awake()
     {
         GenerateAllTiles(tileSize, TILE_COUNT_X, TILE_COUNT_Y);
         SpawnAllPieces();
         PositionAllPieces();
+    }
+
+    private void OnEnable()
+    {
+        whiteInteractor.selectEntered.AddListener(TakeInput);
+        whiteInteractor.selectExited.AddListener(StopInput);
+    }
+
+    private void OnDisable()
+    {
+        whiteInteractor.selectEntered.RemoveListener(TakeInput);
+        whiteInteractor.selectExited.RemoveListener(StopInput);
+    }
+
+    private void TakeInput(SelectEnterEventArgs args)
+    {
+        // Get the GameObject associated with the selected interactable
+        GameObject selectedObject = args.interactableObject.transform.gameObject;
+
+        // Iterate through all chess pieces to find the selected one
+        for (int x = 0; x < TILE_COUNT_X; x++)
+        {
+            for (int y = 0; y < TILE_COUNT_Y; y++)
+            {
+                if (chessPieces[x, y] != null && chessPieces[x, y].gameObject == selectedObject)
+                {
+                    // Store the currently selected piece
+                    currentlyDragging = chessPieces[x, y];
+
+                    Debug.Log($"Selected Chess Piece: {currentlyDragging.type} at {x}, {y}");
+                    return;
+                }
+            }
+        }
+
+        Debug.LogWarning("Selected object is not a chess piece.");
+
+    }
+
+    private void StopInput(SelectExitEventArgs args)
+    {
+        if (currentlyDragging == null)
+        {
+            Debug.LogWarning("No piece is currently being dragged.");
+            return;
+        }
+
+        // Get the position where the piece was dropped
+        Vector3 droppedPosition = currentlyDragging.transform.position;
+
+        // Calculate the closest tile indices
+        int closestX = Mathf.FloorToInt((droppedPosition.x + bounds.x) / tileSize);
+        int closestY = Mathf.FloorToInt((droppedPosition.z + bounds.z) / tileSize);
+
+        // Clamp the values to ensure they're within the board bounds
+        closestX = Mathf.Clamp(closestX, 0, TILE_COUNT_X - 1);
+        closestY = Mathf.Clamp(closestY, 0, TILE_COUNT_Y - 1);
+
+
+        //tiles[closestX, closestY].GetComponent<Renderer>().material.color = Color.green;
+
+        Vector2Int previousPosition = new Vector2Int(currentlyDragging.currentX, currentlyDragging.currentY);
+
+        // Attempt to move the piece
+        bool validMove = MoveTo(currentlyDragging, closestX, closestY);
+
+        if (validMove)
+        {
+            Debug.Log($"Piece moved to {closestX}, {closestY}");
+        }
+        else
+        {
+            // If the move is invalid, snap the piece back to its original position
+            PositionSinglePiece(currentlyDragging.currentX, currentlyDragging.currentY);
+        }
+
+        // Reset currentlyDragging to null after the move
+        currentlyDragging = null;
+
     }
 
     private void Update()
@@ -64,6 +150,13 @@ public class Chessboard : MonoBehaviour
                 currentHover = -Vector2Int.one;
             }
         }
+
+        // For 2 player mode: makes sure that only the current player can move pieces with right hand.
+        whiteInteractor.allowSelect = currentPlayerWhite;
+        //blackInteractor.allowSelect = !currentPlayerWhite;    // uncomment if 2 player mode is added
+
+
+        
     }
     // Generate the board
     private void GenerateAllTiles(float tileSize, int tileCountX, int tileCountY)
@@ -170,6 +263,7 @@ public class Chessboard : MonoBehaviour
 
     private void PositionSinglePiece(int x, int y, bool force = false)
     {
+        Debug.Log("PositionSinglePiece called for x = " + x + ", y = " + y);
         chessPieces[x, y].currentX = x;
         chessPieces[x, y].currentY = y;
         chessPieces[x, y].transform.position = GetTileCenter(x, y);
@@ -193,5 +287,24 @@ public class Chessboard : MonoBehaviour
             }
         }
         return -Vector2Int.one; // Invalid
+    }
+
+    private bool MoveTo(ChessPiece cp, int x, int y)
+    {
+        // Check if the target tile is occupied
+        if (chessPieces[x, y] != null)
+        {
+            Debug.LogWarning($"Cannot move to ({x}, {y}): Tile is already occupied.");
+            return false;
+        }
+
+        Vector2Int previousPosition = new Vector2Int(cp.currentX, cp.currentY);
+
+        chessPieces[x, y] = cp;
+        chessPieces[previousPosition.x, previousPosition.y] = null;
+
+        PositionSinglePiece(x, y);
+
+        return true;
     }
 }
