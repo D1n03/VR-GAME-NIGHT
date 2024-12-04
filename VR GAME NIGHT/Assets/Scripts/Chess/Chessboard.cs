@@ -320,6 +320,11 @@ public class Chessboard : MonoBehaviour
 
     private bool MoveTo(ChessPiece cp, int x, int y)
     {
+        if (!ContainsValidMove(ref availableMoves, new Vector2Int(x, y)))
+        {
+            return false;
+        }
+
         // Check if the target tile is occupied
         if (chessPieces[x, y] != null)
         {
@@ -360,5 +365,17 @@ public class Chessboard : MonoBehaviour
         PositionSinglePiece(x, y);
 
         return true;
+    }
+
+    private bool ContainsValidMove(ref List<Vector2Int> moves, Vector2 pos)
+    {
+        for (int i = 0; i < moves.Count; i++)
+        {
+            if (moves[i].x == pos.x && moves[i].y == pos.y)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }
