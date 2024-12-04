@@ -13,8 +13,8 @@ public class Chessboard : MonoBehaviour
     [SerializeField] private float yOffset = 0.012f;
     [SerializeField] private Vector3 boardCenter = new(0.0f, 0.01f, -3.93f);
     [SerializeField] private float deathSize = 0.9f;
-    [SerializeField] private float deathSpacing = 0.1f;
-    [SerializeField] private float deathPieceyOffset= 0.02f;
+    [SerializeField] private float deathSpacing = 0.25f;
+    [SerializeField] private float deathPieceyOffset= 0.025f;
 
     [Header("Prefabs && Materials")]
     [SerializeField] private GameObject[] prefabs;
