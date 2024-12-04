@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.XR.Interaction.Toolkit;
@@ -11,6 +12,9 @@ public class Chessboard : MonoBehaviour
     [SerializeField] private float tileSize = 0.45f;
     [SerializeField] private float yOffset = 0.012f;
     [SerializeField] private Vector3 boardCenter = new(0.0f, 0.01f, -3.93f);
+    [SerializeField] private float deathSize = 1;
+    [SerializeField] private float deathSpacing = 0.1f;
+    [SerializeField] private float deathPieceyOffset= 0.02f;
 
     [Header("Prefabs && Materials")]
     [SerializeField] private GameObject[] prefabs;
@@ -21,6 +25,8 @@ public class Chessboard : MonoBehaviour
     // LOGIC
     private ChessPiece[,] chessPieces;
     private ChessPiece currentlyDragging;
+    private List<ChessPiece> deadWhites = new List<ChessPiece>();
+    private List<ChessPiece> deadBlacks = new List<ChessPiece>();
     private const int TILE_COUNT_X = 8;
     private const int TILE_COUNT_Y = 8;
     private GameObject[,] tiles;
@@ -266,7 +272,7 @@ public class Chessboard : MonoBehaviour
         Debug.Log("PositionSinglePiece called for x = " + x + ", y = " + y);
         chessPieces[x, y].currentX = x;
         chessPieces[x, y].currentY = y;
-        chessPieces[x, y].transform.position = GetTileCenter(x, y);
+        chessPieces[x, y].SetPosition(GetTileCenter(x, y));
     }
 
     private Vector3 GetTileCenter(int x, int y)
@@ -294,8 +300,33 @@ public class Chessboard : MonoBehaviour
         // Check if the target tile is occupied
         if (chessPieces[x, y] != null)
         {
-            Debug.LogWarning($"Cannot move to ({x}, {y}): Tile is already occupied.");
-            return false;
+            ChessPiece ocp = chessPieces[x, y];
+            if (cp.team == ocp.team)
+            {
+                return false;
+            }
+            // If its the enemy team
+            if (ocp.team == 0)
+            {
+                deadWhites.Add(ocp);
+                ocp.SetScale(Vector3.one * deathSize);
+                ocp.SetPosition(new Vector3(9 * tileSize, deathPieceyOffset, -1 * tileSize) 
+                    - bounds 
+                    + new Vector3(tileSize / 2, 0, tileSize / 2)
+                    + (Vector3.forward * deathSpacing) * deadWhites.Count);
+            }
+            else
+            {
+                deadBlacks.Add(ocp);
+                ocp.SetScale(Vector3.one * deathSize);
+                ocp.SetPosition(new Vector3(-2 * tileSize, deathPieceyOffset, 9 * tileSize)
+                    - bounds
+                    + new Vector3(tileSize / 2, 0, tileSize / 2)
+                    + (Vector3.back * deathSpacing) * deadBlacks.Count);
+            }
+
+            //Debug.LogWarning($"Cannot move to ({x}, {y}): Tile is already occupied.");
+            //return false;
         }
 
         Vector2Int previousPosition = new Vector2Int(cp.currentX, cp.currentY);
