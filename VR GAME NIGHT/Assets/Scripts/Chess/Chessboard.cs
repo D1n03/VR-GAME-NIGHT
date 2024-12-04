@@ -25,6 +25,7 @@ public class Chessboard : MonoBehaviour
     // LOGIC
     private ChessPiece[,] chessPieces;
     private ChessPiece currentlyDragging;
+    private List<Vector2Int> availableMoves = new List<Vector2Int>();
     private List<ChessPiece> deadWhites = new List<ChessPiece>();
     private List<ChessPiece> deadBlacks = new List<ChessPiece>();
     private const int TILE_COUNT_X = 8;
@@ -68,7 +69,9 @@ public class Chessboard : MonoBehaviour
                 {
                     // Store the currently selected piece
                     currentlyDragging = chessPieces[x, y];
-
+                    // Get a list of where I can go, highlight tiles as well
+                    availableMoves = currentlyDragging.GetAvailableMoves(ref chessPieces, TILE_COUNT_X, TILE_COUNT_Y);
+                    HighlightTiles();
                     Debug.Log($"Selected Chess Piece: {currentlyDragging.type} at {x}, {y}");
                     return;
                 }
@@ -117,6 +120,7 @@ public class Chessboard : MonoBehaviour
         }
 
         // Reset currentlyDragging to null after the move
+        RemoveHighlightTiles();
         currentlyDragging = null;
 
     }
@@ -279,6 +283,25 @@ public class Chessboard : MonoBehaviour
     {
         return new Vector3(x * tileSize, yOffset, y * tileSize) - bounds + new Vector3(tileSize / 2, 0, tileSize / 2);
     }
+
+    // Highlight tiles
+    private void HighlightTiles()
+    {
+        for (int i = 0; i < availableMoves.Count; i++)
+        {
+            tiles[availableMoves[i].x, availableMoves[i].y].layer = LayerMask.NameToLayer("Highlight");
+        }
+    }
+
+    private void RemoveHighlightTiles()
+    {
+        for (int i = 0; i < availableMoves.Count; i++)
+        {
+            tiles[availableMoves[i].x, availableMoves[i].y].layer = LayerMask.NameToLayer("Tile");
+        }
+        availableMoves.Clear();
+    }
+
     // Operations
     private Vector2Int LookupTileIndex(GameObject hitInfo)
     {
