@@ -12,7 +12,7 @@ public class Chessboard : MonoBehaviour
     [SerializeField] private float tileSize = 0.45f;
     [SerializeField] private float yOffset = 0.012f;
     [SerializeField] private Vector3 boardCenter = new(0.0f, 0.01f, -3.93f);
-    [SerializeField] private float deathSize = 1;
+    [SerializeField] private float deathSize = 0.9f;
     [SerializeField] private float deathSpacing = 0.1f;
     [SerializeField] private float deathPieceyOffset= 0.02f;
 
@@ -332,7 +332,7 @@ public class Chessboard : MonoBehaviour
             if (ocp.team == 0)
             {
                 deadWhites.Add(ocp);
-                ocp.SetScale(Vector3.one * deathSize);
+                ocp.SetScale(new Vector3(deathSize, deathSize, deathSize));
                 ocp.SetPosition(new Vector3(9 * tileSize, deathPieceyOffset, -1 * tileSize) 
                     - bounds 
                     + new Vector3(tileSize / 2, 0, tileSize / 2)
@@ -341,7 +341,7 @@ public class Chessboard : MonoBehaviour
             else
             {
                 deadBlacks.Add(ocp);
-                ocp.SetScale(Vector3.one * deathSize);
+                ocp.SetScale(new Vector3(deathSize, deathSize, deathSize));
                 ocp.SetPosition(new Vector3(-2 * tileSize, deathPieceyOffset, 9 * tileSize)
                     - bounds
                     + new Vector3(tileSize / 2, 0, tileSize / 2)
