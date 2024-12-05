@@ -366,6 +366,51 @@ public class Chessboard : MonoBehaviour
                 }
             }
         }
+
+        if (specialMove == SpecialMove.Castling)
+        {
+            Vector2Int[] lastMove = moveList[moveList.Count - 1];
+            // Left Rook
+            if (lastMove[1].x == 2)
+            {
+                // White side
+                if (lastMove[1].y == 0)
+                {
+                    ChessPiece rook = chessPieces[0, 0];
+                    chessPieces[3, 0] = rook;
+                    PositionSinglePiece(3, 0);
+                    chessPieces[0, 0] = null;
+                }
+                // Black side
+                else if (lastMove[1].y == 7)
+                {
+                    ChessPiece rook = chessPieces[0, 7];
+                    chessPieces[3, 7] = rook;
+                    PositionSinglePiece(3, 7);
+                    chessPieces[0, 7] = null;
+                }
+            }
+            // Right Rook
+            if (lastMove[1].x == 6)
+            {
+                // White side
+                if (lastMove[1].y == 0)
+                {
+                    ChessPiece rook = chessPieces[7, 0];
+                    chessPieces[5, 0] = rook;
+                    PositionSinglePiece(5, 0);
+                    chessPieces[7, 0] = null;
+                }
+                // Black side
+                else if (lastMove[1].y == 7)
+                {
+                    ChessPiece rook = chessPieces[7, 7];
+                    chessPieces[5, 7] = rook;
+                    PositionSinglePiece(5, 7);
+                    chessPieces[7, 7] = null;
+                }
+            }
+        }
     }
 
 
