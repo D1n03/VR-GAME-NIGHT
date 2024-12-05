@@ -34,10 +34,11 @@ public class Chessboard : MonoBehaviour
     private Camera currentCamera;
     private Vector2Int currentHover;
     private Vector3 bounds;
-    private bool currentPlayerWhite = true;
+    private bool isWhiteTurn;
 
     private void Awake()
     {
+        isWhiteTurn = true;
         GenerateAllTiles(tileSize, TILE_COUNT_X, TILE_COUNT_Y);
         SpawnAllPieces();
         PositionAllPieces();
@@ -67,13 +68,16 @@ public class Chessboard : MonoBehaviour
             {
                 if (chessPieces[x, y] != null && chessPieces[x, y].gameObject == selectedObject)
                 {
-                    // Store the currently selected piece
-                    currentlyDragging = chessPieces[x, y];
-                    // Get a list of where I can go, highlight tiles as well
-                    availableMoves = currentlyDragging.GetAvailableMoves(ref chessPieces, TILE_COUNT_X, TILE_COUNT_Y);
-                    HighlightTiles();
-                    Debug.Log($"Selected Chess Piece: {currentlyDragging.type} at {x}, {y}");
-                    return;
+                    if ((chessPieces[x, y].team == 0 && isWhiteTurn) || (chessPieces[x, y].team == 1 && !isWhiteTurn))
+                    {
+                        // Store the currently selected piece
+                        currentlyDragging = chessPieces[x, y];
+                        // Get a list of where I can go, highlight tiles as well
+                        availableMoves = currentlyDragging.GetAvailableMoves(ref chessPieces, TILE_COUNT_X, TILE_COUNT_Y);
+                        HighlightTiles();
+                        Debug.Log($"Selected Chess Piece: {currentlyDragging.type} at {x}, {y}");
+                        return;
+                    }
                 }
             }
         }
@@ -162,7 +166,8 @@ public class Chessboard : MonoBehaviour
         }
 
         // For 2 player mode: makes sure that only the current player can move pieces with right hand.
-        whiteInteractor.allowSelect = currentPlayerWhite;
+        // whiteInteractor.allowSelect = isWhiteTurn;
+        whiteInteractor.allowSelect = true;
         //blackInteractor.allowSelect = !currentPlayerWhite;    // uncomment if 2 player mode is added
 
 
@@ -293,6 +298,16 @@ public class Chessboard : MonoBehaviour
         }
     }
 
+    // Checkmate
+    private void CheckMate(int team)
+    {
+
+    }
+
+    private void DisplayVictory(int winningTeam)
+    {
+
+    }
     private void RemoveHighlightTiles()
     {
         for (int i = 0; i < availableMoves.Count; i++)
@@ -336,6 +351,10 @@ public class Chessboard : MonoBehaviour
             // If its the enemy team
             if (ocp.team == 0)
             {
+                if (ocp.type == ChessPieceType.King)
+                {
+                    CheckMate(1);
+                }
                 deadWhites.Add(ocp);
                 ocp.SetScale(new Vector3(deathSize, deathSize, deathSize));
                 ocp.SetPosition(new Vector3(9 * tileSize, deathPieceyOffset, -1 * tileSize) 
@@ -345,6 +364,10 @@ public class Chessboard : MonoBehaviour
             }
             else
             {
+                if (ocp.type == ChessPieceType.King)
+                {
+                    CheckMate(0);
+                }
                 deadBlacks.Add(ocp);
                 ocp.SetScale(new Vector3(deathSize, deathSize, deathSize));
                 ocp.SetPosition(new Vector3(-2 * tileSize, deathPieceyOffset, 9 * tileSize)
@@ -363,6 +386,8 @@ public class Chessboard : MonoBehaviour
         chessPieces[previousPosition.x, previousPosition.y] = null;
 
         PositionSinglePiece(x, y);
+
+        isWhiteTurn = !isWhiteTurn;
 
         return true;
     }
