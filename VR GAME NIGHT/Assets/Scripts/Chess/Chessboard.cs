@@ -496,19 +496,25 @@ public class Chessboard : MonoBehaviour
 
     private void PreventCheck()
     {
-        //ChessPiece targetKing = null;
-        //for (int x = 0; x < TILE_COUNT_X; x++)
-        //{
-        //    for (int y = 0; y < TILE_COUNT_Y; y++)
-        //    {
-        //        if (chessPieces[x, y].type == ChessPieceType.King && chessPieces[x, y].team == currentlyDragging.team)
-        //        {
-        //            targetKing = chessPieces[x, y];
-        //        }
-        //    }
-        //}
-        //// Since we're sending ref availableMoves, we will be deleting moves that are putting us in check
-        //SimulateMoveForSinglePiece(currentlyDragging, ref availableMoves, targetKing);
+        ChessPiece targetKing = null;
+        for (int x = 0; x < TILE_COUNT_X; x++)
+        {
+            for (int y = 0; y < TILE_COUNT_Y; y++)
+            {
+                if (chessPieces[x,y] != null)
+                {
+                    if (chessPieces[x, y].type == ChessPieceType.King)
+                    {
+                        if (chessPieces[x, y].team == currentlyDragging.team)
+                        {
+                            targetKing = chessPieces[x, y];
+                        }
+                    }
+                }
+            }
+        }
+        // Since we're sending ref availableMoves, we will be deleting moves that are putting us in check
+        SimulateMoveForSinglePiece(currentlyDragging, ref availableMoves, targetKing);
     }
 
     private void SimulateMoveForSinglePiece(ChessPiece cp, ref List<Vector2Int> moves, ChessPiece targetKing)
