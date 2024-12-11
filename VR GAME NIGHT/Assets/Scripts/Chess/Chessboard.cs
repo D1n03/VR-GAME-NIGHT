@@ -5,6 +5,14 @@ using UnityEngine.EventSystems;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.OpenXR.Features.Interactions;
 
+public enum SpecialMove
+{
+    None = 0,
+    EnPassant,
+    Castling,
+    Promotion
+}
+
 public class Chessboard : MonoBehaviour
 {
     [Header("Art stuff here")]
@@ -12,9 +20,9 @@ public class Chessboard : MonoBehaviour
     [SerializeField] private float tileSize = 0.45f;
     [SerializeField] private float yOffset = 0.012f;
     [SerializeField] private Vector3 boardCenter = new(0.0f, 0.01f, -3.93f);
-    [SerializeField] private float deathSize = 1;
-    [SerializeField] private float deathSpacing = 0.1f;
-    [SerializeField] private float deathPieceyOffset= 0.02f;
+    [SerializeField] private float deathSize = 0.9f;
+    [SerializeField] private float deathSpacing = 0.25f;
+    [SerializeField] private float deathPieceyOffset= 0.025f;
 
     [Header("Prefabs && Materials")]
     [SerializeField] private GameObject[] prefabs;
@@ -25,6 +33,7 @@ public class Chessboard : MonoBehaviour
     // LOGIC
     private ChessPiece[,] chessPieces;
     private ChessPiece currentlyDragging;
+    private List<Vector2Int> availableMoves = new List<Vector2Int>();
     private List<ChessPiece> deadWhites = new List<ChessPiece>();
     private List<ChessPiece> deadBlacks = new List<ChessPiece>();
     private const int TILE_COUNT_X = 8;
@@ -33,10 +42,14 @@ public class Chessboard : MonoBehaviour
     private Camera currentCamera;
     private Vector2Int currentHover;
     private Vector3 bounds;
-    private bool currentPlayerWhite = true;
+    private bool isWhiteTurn;
+    private SpecialMove specialMove;
+
+    private List<Vector2Int[]> moveList = new List<Vector2Int[]>();
 
     private void Awake()
     {
+        isWhiteTurn = true;
         GenerateAllTiles(tileSize, TILE_COUNT_X, TILE_COUNT_Y);
         SpawnAllPieces();
         PositionAllPieces();
@@ -66,11 +79,18 @@ public class Chessboard : MonoBehaviour
             {
                 if (chessPieces[x, y] != null && chessPieces[x, y].gameObject == selectedObject)
                 {
-                    // Store the currently selected piece
-                    currentlyDragging = chessPieces[x, y];
-
-                    Debug.Log($"Selected Chess Piece: {currentlyDragging.type} at {x}, {y}");
-                    return;
+                    if ((chessPieces[x, y].team == 0 && isWhiteTurn) || (chessPieces[x, y].team == 1 && !isWhiteTurn))
+                    {
+                        // Store the currently selected piece
+                        currentlyDragging = chessPieces[x, y];
+                        // Get a list of where I can go, highlight tiles as well
+                        availableMoves = currentlyDragging.GetAvailableMoves(ref chessPieces, TILE_COUNT_X, TILE_COUNT_Y);
+                        // Get a list of special moves
+                        specialMove = currentlyDragging.GetSpecialMoves(ref chessPieces, ref moveList, ref availableMoves);
+                        HighlightTiles();
+                        Debug.Log($"Selected Chess Piece: {currentlyDragging.type} at {x}, {y}");
+                        return;
+                    }
                 }
             }
         }
@@ -117,6 +137,7 @@ public class Chessboard : MonoBehaviour
         }
 
         // Reset currentlyDragging to null after the move
+        RemoveHighlightTiles();
         currentlyDragging = null;
 
     }
@@ -158,7 +179,8 @@ public class Chessboard : MonoBehaviour
         }
 
         // For 2 player mode: makes sure that only the current player can move pieces with right hand.
-        whiteInteractor.allowSelect = currentPlayerWhite;
+        // whiteInteractor.allowSelect = isWhiteTurn;
+        whiteInteractor.allowSelect = true;
         //blackInteractor.allowSelect = !currentPlayerWhite;    // uncomment if 2 player mode is added
 
 
@@ -279,6 +301,148 @@ public class Chessboard : MonoBehaviour
     {
         return new Vector3(x * tileSize, yOffset, y * tileSize) - bounds + new Vector3(tileSize / 2, 0, tileSize / 2);
     }
+
+    // Highlight tiles
+    private void HighlightTiles()
+    {
+        for (int i = 0; i < availableMoves.Count; i++)
+        {
+            tiles[availableMoves[i].x, availableMoves[i].y].layer = LayerMask.NameToLayer("Highlight");
+        }
+    }
+
+    // Checkmate
+    private void CheckMate(int team)
+    {
+
+    }
+
+    private void DisplayVictory(int winningTeam)
+    {
+
+    }
+    private void RemoveHighlightTiles()
+    {
+        for (int i = 0; i < availableMoves.Count; i++)
+        {
+            tiles[availableMoves[i].x, availableMoves[i].y].layer = LayerMask.NameToLayer("Tile");
+        }
+        availableMoves.Clear();
+    }
+
+    // Special Moves
+    private void ProcessSpecialMove()
+    {
+        if (specialMove == SpecialMove.EnPassant)
+        {
+            var newMove = moveList[moveList.Count - 1];
+            ChessPiece myPawn = chessPieces[newMove[1].x, newMove[1].y];
+            var targetPawnPosition = moveList[moveList.Count - 2];
+            ChessPiece enemyPawn = chessPieces[targetPawnPosition[1].x, targetPawnPosition[1].y];
+
+            if (myPawn.currentX == enemyPawn.currentX)
+            {
+                if (myPawn.currentY == enemyPawn.currentY - 1 || myPawn.currentY == enemyPawn.currentY + 1)
+                {
+                    if (enemyPawn.team == 0)
+                    {
+                        deadWhites.Add(enemyPawn);
+                        enemyPawn.SetScale(new Vector3(deathSize, deathSize, deathSize));
+                        enemyPawn.SetPosition(new Vector3(9 * tileSize, deathPieceyOffset, -1 * tileSize)
+                            - bounds
+                            + new Vector3(tileSize / 2, 0, tileSize / 2)
+                            + (Vector3.forward * deathSpacing) * deadWhites.Count);
+                    }
+                    else
+                    {
+                        deadBlacks.Add(enemyPawn);
+                        enemyPawn.SetScale(new Vector3(deathSize, deathSize, deathSize));
+                        enemyPawn.SetPosition(new Vector3(-2 * tileSize, deathPieceyOffset, 9 * tileSize)
+                            - bounds
+                            + new Vector3(tileSize / 2, 0, tileSize / 2)
+                            + (Vector3.back * deathSpacing) * deadBlacks.Count);
+                    }
+                    chessPieces[enemyPawn.currentX, enemyPawn.currentY] = null;
+                }
+            }
+        }
+
+        if (specialMove == SpecialMove.Promotion)
+        {
+            Vector2Int[] lastMove = moveList[moveList.Count - 1];
+            ChessPiece targetPawn = chessPieces[lastMove[1].x, lastMove[1].y];
+
+            if (targetPawn.type == ChessPieceType.Pawn)
+            {
+                if (targetPawn.team == 0 && lastMove[1].y == 7)
+                {
+                    ChessPiece newQueen = SpawnSinglePiece(ChessPieceType.Queen, 0);
+                    newQueen.transform.position = chessPieces[lastMove[1].x, lastMove[1].y].transform.position;
+                    Destroy(chessPieces[lastMove[1].x, lastMove[1].y].gameObject);
+                    chessPieces[lastMove[1].x, lastMove[1].y] = newQueen;
+                    PositionSinglePiece(lastMove[1].x, lastMove[1].y);
+                }
+            }
+            if (targetPawn.type == ChessPieceType.Pawn)
+            {
+                if (targetPawn.team == 1 && lastMove[1].y == 0)
+                {
+                    ChessPiece newQueen = SpawnSinglePiece(ChessPieceType.Queen, 1);
+                    newQueen.transform.position = chessPieces[lastMove[1].x, lastMove[1].y].transform.position;
+                    Destroy(chessPieces[lastMove[1].x, lastMove[1].y].gameObject);
+                    chessPieces[lastMove[1].x, lastMove[1].y] = newQueen;
+                    PositionSinglePiece(lastMove[1].x, lastMove[1].y);
+                }
+            }
+        }
+
+        if (specialMove == SpecialMove.Castling)
+        {
+            Vector2Int[] lastMove = moveList[moveList.Count - 1];
+            // Left Rook
+            if (lastMove[1].x == 2)
+            {
+                // White side
+                if (lastMove[1].y == 0)
+                {
+                    ChessPiece rook = chessPieces[0, 0];
+                    chessPieces[3, 0] = rook;
+                    PositionSinglePiece(3, 0);
+                    chessPieces[0, 0] = null;
+                }
+                // Black side
+                else if (lastMove[1].y == 7)
+                {
+                    ChessPiece rook = chessPieces[0, 7];
+                    chessPieces[3, 7] = rook;
+                    PositionSinglePiece(3, 7);
+                    chessPieces[0, 7] = null;
+                }
+            }
+            // Right Rook
+            if (lastMove[1].x == 6)
+            {
+                // White side
+                if (lastMove[1].y == 0)
+                {
+                    ChessPiece rook = chessPieces[7, 0];
+                    chessPieces[5, 0] = rook;
+                    PositionSinglePiece(5, 0);
+                    chessPieces[7, 0] = null;
+                }
+                // Black side
+                else if (lastMove[1].y == 7)
+                {
+                    ChessPiece rook = chessPieces[7, 7];
+                    chessPieces[5, 7] = rook;
+                    PositionSinglePiece(5, 7);
+                    chessPieces[7, 7] = null;
+                }
+            }
+        }
+    }
+
+
     // Operations
     private Vector2Int LookupTileIndex(GameObject hitInfo)
     {
@@ -297,6 +461,11 @@ public class Chessboard : MonoBehaviour
 
     private bool MoveTo(ChessPiece cp, int x, int y)
     {
+        if (!ContainsValidMove(ref availableMoves, new Vector2Int(x, y)))
+        {
+            return false;
+        }
+
         // Check if the target tile is occupied
         if (chessPieces[x, y] != null)
         {
@@ -308,8 +477,12 @@ public class Chessboard : MonoBehaviour
             // If its the enemy team
             if (ocp.team == 0)
             {
+                if (ocp.type == ChessPieceType.King)
+                {
+                    CheckMate(1);
+                }
                 deadWhites.Add(ocp);
-                ocp.SetScale(Vector3.one * deathSize);
+                ocp.SetScale(new Vector3(deathSize, deathSize, deathSize));
                 ocp.SetPosition(new Vector3(9 * tileSize, deathPieceyOffset, -1 * tileSize) 
                     - bounds 
                     + new Vector3(tileSize / 2, 0, tileSize / 2)
@@ -317,8 +490,12 @@ public class Chessboard : MonoBehaviour
             }
             else
             {
+                if (ocp.type == ChessPieceType.King)
+                {
+                    CheckMate(0);
+                }
                 deadBlacks.Add(ocp);
-                ocp.SetScale(Vector3.one * deathSize);
+                ocp.SetScale(new Vector3(deathSize, deathSize, deathSize));
                 ocp.SetPosition(new Vector3(-2 * tileSize, deathPieceyOffset, 9 * tileSize)
                     - bounds
                     + new Vector3(tileSize / 2, 0, tileSize / 2)
@@ -336,6 +513,22 @@ public class Chessboard : MonoBehaviour
 
         PositionSinglePiece(x, y);
 
+        isWhiteTurn = !isWhiteTurn;
+        moveList.Add(new Vector2Int[] { previousPosition, new Vector2Int(x,y)});
+
+        ProcessSpecialMove();
         return true;
+    }
+
+    private bool ContainsValidMove(ref List<Vector2Int> moves, Vector2Int pos)
+    {
+        for (int i = 0; i < moves.Count; i++)
+        {
+            if (moves[i].x == pos.x && moves[i].y == pos.y)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }
