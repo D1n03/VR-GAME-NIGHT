@@ -7,31 +7,41 @@ using UnityEngine.XR.Interaction.Toolkit;
 
 public class SpawnCards : MonoBehaviour
 {
-    public GameObject prefabToSpawn;
+    public GameObject[] prefabToSpawn;
     public Transform parentObject;
     public GameObject holdPoint;
     private readonly List<GameObject> cards = new();
     private XRSimpleInteractable interactable;
-    public readonly float cardStackHeight = 0.05f;
-    private readonly int cardCount = 26;
+    public float cardStackHeight = 0.05f;
+    private int CardCount => prefabToSpawn.Length;
     private Vector3 up = new(0.0f, 0.0f, 1.0f);
 
-    private float CardInterval => cardStackHeight / cardCount;
+    private float CardInterval => cardStackHeight / CardCount;
 
     void Spawn()
     {
-        var cardPermutation = GetPermutation(cardCount);
+        var cardPermutation = GetPermutation(CardCount);
         if (prefabToSpawn != null && parentObject != null)
         {
-            for (int i = 0; i<cardCount; i++)
+            for (int i = 0; i<CardCount; i++)
             {
                 // Instantiate the prefab as a child of the parentObject
-                GameObject spawnedObject = Instantiate(prefabToSpawn, parentObject);
-                GameObject textchild = spawnedObject.GetNamedChild("Text");
-                textchild.GetComponent<TextMeshPro>().text = ((char)('A' + cardPermutation[i])).ToString();
+                //GameObject spawnedObject = Instantiate(prefabToSpawn, parentObject);
+                //GameObject textchild = spawnedObject.GetNamedChild("Text");
+                //textchild.GetComponent<TextMeshPro>().text = ((char)('A' + cardPermutation[i])).ToString();
+
+                GameObject spawnedObject = prefabToSpawn[cardPermutation[i]];
+                spawnedObject.transform.SetParent(parentObject, false);
+
+                var collider = spawnedObject.AddComponent<MeshCollider>();
+                //var rigidbody = spawnedObject.AddComponent<Rigidbody>();
+                collider.convex = true;
+                //rigidbody.useGravity = false;
+
 
                 // Optional: Reset the local position and rotation of the spawned object
                 spawnedObject.transform.localPosition = CardInterval * i * up;
+                spawnedObject.transform.localEulerAngles = new Vector3(-90.0f, 0.0f, 0.0f);
                 //spawnedObject.transform.localRotation = Quaternion.identity;
                 cards.Add(spawnedObject);
             }
@@ -106,10 +116,23 @@ public class SpawnCards : MonoBehaviour
         pivotPoint.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
         card.transform.localPosition = offset;
 
+        var xrInteractable = pivotPoint.AddComponent<XRSimpleInteractable>();
+        xrInteractable.hoverEntered.AddListener((HoverEnterEventArgs args) => HoverCard(args, pivotPoint));
+        var rigidBody = pivotPoint.AddComponent<Rigidbody>();
+        rigidBody.useGravity = false;
+
         var holdCards = holdPoint.GetComponent<HoldCards>();
         holdCards.pivotPoints.Add(pivotPoint);
 
         Debug.Log("Took a card");
+    }
+
+    void HoverCard(HoverEnterEventArgs args, GameObject pivotPoint)
+    {
+        var postion = pivotPoint.transform.localPosition;
+        postion.y += 0.01f;
+        pivotPoint.transform.localPosition = postion;
+        Debug.Log("Hovered over a card");
     }
 
     // Update is called once per frame
