@@ -88,6 +88,8 @@ public class Chessboard : MonoBehaviour
                         availableMoves = currentlyDragging.GetAvailableMoves(ref chessPieces, TILE_COUNT_X, TILE_COUNT_Y);
                         // Get a list of special moves
                         specialMove = currentlyDragging.GetSpecialMoves(ref chessPieces, ref moveList, ref availableMoves);
+
+                        PreventCheck();
                         HighlightTiles();
                         Debug.Log($"Selected Chess Piece: {currentlyDragging.type} at {x}, {y}");
                         return;
@@ -492,6 +494,40 @@ public class Chessboard : MonoBehaviour
         }
     }
 
+    private void PreventCheck()
+    {
+        //ChessPiece targetKing = null;
+        //for (int x = 0; x < TILE_COUNT_X; x++)
+        //{
+        //    for (int y = 0; y < TILE_COUNT_Y; y++)
+        //    {
+        //        if (chessPieces[x, y].type == ChessPieceType.King && chessPieces[x, y].team == currentlyDragging.team)
+        //        {
+        //            targetKing = chessPieces[x, y];
+        //        }
+        //    }
+        //}
+        //// Since we're sending ref availableMoves, we will be deleting moves that are putting us in check
+        //SimulateMoveForSinglePiece(currentlyDragging, ref availableMoves, targetKing);
+    }
+
+    private void SimulateMoveForSinglePiece(ChessPiece cp, ref List<Vector2Int> moves, ChessPiece targetKing)
+    {
+        // Save the current values, to reset after the function call 
+        int actualX = cp.currentX;
+        int actualY = cp.currentY;
+
+        List<Vector2Int> movesToRemove = new List<Vector2Int>();
+
+        // Going through all the moves, simulate them and check if we're in check
+
+
+        // Remove from the current available move list
+        for (int i = 0; i < movesToRemove.Count; i++)
+        {
+            moves.Remove(movesToRemove[i]);
+        }
+    }
 
     // Operations
     private Vector2Int LookupTileIndex(GameObject hitInfo)
