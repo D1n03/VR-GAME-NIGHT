@@ -12,6 +12,8 @@ EditorBuildSettings:
     path: Assets/Scenes/ChessScene.unity
     guid: a51805f29bb55644e812e8531d0ed4cd
   m_configObjects:
+    Unity.XR.Oculus.Settings: {fileID: 11400000, guid: 3235b14f74648bb41a400c02db601df8,
+      type: 2}
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: 583d45904a7263b4da57826ed33153cf,
       type: 2}
     com.unity.xr.openxr.settings4: {fileID: 11400000, guid: 388262d69e98db4479fea133f0e47bdf,

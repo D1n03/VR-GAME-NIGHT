@@ -24,6 +24,7 @@ MonoBehaviour:
   - 
   - 
   - 
+  - Highlight
   - 
   - 
   - 
@@ -43,5 +44,4 @@ MonoBehaviour:
   - 
   - 
   - 
-  - 
-  - 
+  - Teleport
