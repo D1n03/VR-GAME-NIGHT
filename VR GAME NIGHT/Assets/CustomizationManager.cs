@@ -9,9 +9,14 @@ public class CustomizationManager : MonoBehaviour
 {
     public GameObject customizableSphere;
     public GameObject hatObject;
+    public GameObject facePlane;
     public TextMeshProUGUI usernameText;
     public Button whiteButton, purpleButton, blueButton, indigoButton, redButton, orangeButton, yellowButton, greenButton;
     public Toggle topHatToggle;
+    public Button nextFaceButton, previousFaceButton;
+
+    [Tooltip("Assign face textures in order")]
+    public Texture[] faceTextures; // Array of textures to be assigned in the Inspector
 
     private string jsonFilePath;
     private PlayerSkinData skinData;
@@ -27,7 +32,6 @@ public class CustomizationManager : MonoBehaviour
 
         jsonFilePath = Path.Combine(Application.persistentDataPath, "player_skin.json");
 
-        // Load or create JSON
         if (File.Exists(jsonFilePath))
         {
             string json = File.ReadAllText(jsonFilePath);
@@ -42,7 +46,6 @@ public class CustomizationManager : MonoBehaviour
         // Set initial appearance
         ApplySkinData();
 
-        // Hook up button listeners
         whiteButton.onClick.AddListener(() => UpdateSphereColor("white"));
         purpleButton.onClick.AddListener(() => UpdateSphereColor("purple"));
         blueButton.onClick.AddListener(() => UpdateSphereColor("blue"));
@@ -52,6 +55,10 @@ public class CustomizationManager : MonoBehaviour
         yellowButton.onClick.AddListener(() => UpdateSphereColor("yellow"));
         greenButton.onClick.AddListener(() => UpdateSphereColor("green"));
         topHatToggle.onValueChanged.AddListener(UpdateHatStatus);
+
+
+        nextFaceButton.onClick.AddListener(NextFace);
+        previousFaceButton.onClick.AddListener(PreviousFace);
 
     }
 
@@ -83,7 +90,8 @@ public class CustomizationManager : MonoBehaviour
             customizableSphere.GetComponent<Renderer>().material.color = color;
         }
 
-        // Update hat visibility
+        UpdateFaceTexture();
+
         if (hatObject != null)
         {
             hatObject.SetActive(skinData.hasHat);
@@ -92,7 +100,6 @@ public class CustomizationManager : MonoBehaviour
         // Update toggle state to match JSON data
         topHatToggle.SetIsOnWithoutNotify(skinData.hasHat);
 
-        // Update username text
         if (usernameText != null)
         {
             usernameText.text = skinData.name;
@@ -104,6 +111,43 @@ public class CustomizationManager : MonoBehaviour
         string json = JsonUtility.ToJson(skinData, true);
         File.WriteAllText(jsonFilePath, json);
     }
+
+    private void UpdateFaceTexture()
+    {
+        if (faceTextures == null || faceTextures.Length == 0)
+        {
+            Debug.LogWarning("Face textures are not assigned!");
+            return;
+        }
+
+        if (skinData.faceType >= 0 && skinData.faceType < faceTextures.Length)
+        {
+            Renderer renderer = facePlane.GetComponent<Renderer>();
+            Material material = renderer.material;
+            material.SetTexture("_MainTex", faceTextures[skinData.faceType]);
+        }
+        else
+        {
+            Debug.LogWarning($"Face type index {skinData.faceType} is out of bounds!");
+        }
+    }
+
+    private void NextFace()
+    {
+        print("next face");
+        skinData.faceType = (skinData.faceType + 1) % 15; // Assuming 15 face textures (0 to 14)
+        SaveSkinData();
+        ApplySkinData();
+    }
+
+    private void PreviousFace()
+    {
+        print("old face");
+        skinData.faceType = (skinData.faceType - 1 + 15) % 15; // Wrap around to 14 if it goes below 0
+        SaveSkinData();
+        ApplySkinData();
+    }
+
 
     private Dictionary<string, Color> colorMapping = new Dictionary<string, Color>
     {

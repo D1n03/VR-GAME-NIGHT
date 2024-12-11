@@ -5,7 +5,10 @@ using TMPro;
 
 public class SphereAppearanceLoader : MonoBehaviour
 {
-    public TextMeshProUGUI usernameText; // For displaying the name
+    public TextMeshProUGUI usernameText;
+    public GameObject facePlane; // Plane object with the face material
+    public Texture[] faceTextures;
+
     private string jsonFilePath;
 
     void Start()
@@ -35,6 +38,35 @@ public class SphereAppearanceLoader : MonoBehaviour
             {
                 usernameText.text = skinData.name;
             }
+
+            UpdateFaceTexture(skinData);
+        }
+    }
+
+    private void UpdateFaceTexture(PlayerSkinData skinData)
+    {
+        if (faceTextures == null || faceTextures.Length == 0)
+        {
+            Debug.LogWarning("Face textures are not assigned!");
+            return;
+        }
+
+        if (skinData.faceType >= 0 && skinData.faceType < faceTextures.Length)
+        {
+            if (facePlane != null)
+            {
+                Renderer renderer = facePlane.GetComponent<Renderer>();
+                Material material = renderer.material;
+                material.SetTexture("_MainTex", faceTextures[skinData.faceType]);
+            }
+            else
+            {
+                Debug.LogWarning("Face plane object is not assigned!");
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"Face type index {skinData.faceType} is out of bounds!");
         }
     }
 
