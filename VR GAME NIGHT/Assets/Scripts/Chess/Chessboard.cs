@@ -101,6 +101,10 @@ public class Chessboard : MonoBehaviour
                         Debug.Log($"Selected Chess Piece: {currentlyDragging.type} at {x}, {y}");
                         return;
                     }
+                    else
+                    {
+                        illegalMove.Play();
+                    }
                 }
             }
         }
