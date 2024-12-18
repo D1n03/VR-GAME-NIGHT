@@ -24,6 +24,8 @@ public class Chessboard : MonoBehaviour
     [SerializeField] private float deathSpacing = 0.25f;
     [SerializeField] private float deathPieceyOffset= 0.025f;
     [SerializeField] private GameObject victoryScreen;
+    [SerializeField] private ParticleSystem fireworks;
+    [SerializeField] private AudioSource fireworksSound;
     [SerializeField] private AudioSource placePiece;
     [SerializeField] private AudioSource illegalMove;
     [SerializeField] private AudioSource castleMove;
@@ -328,6 +330,9 @@ public class Chessboard : MonoBehaviour
     // Checkmate
     private void CheckMate(int team)
     {
+        fireworks.gameObject.SetActive(true);
+        fireworks.Play();
+        fireworksSound.Play();
         DisplayVictory(team);
     }
 
@@ -340,6 +345,9 @@ public class Chessboard : MonoBehaviour
     public void OnResetButton()
     {
         // UI
+        fireworks.Play();
+        fireworks.gameObject.SetActive(false);
+        fireworksSound.Stop();
         victoryScreen.transform.GetChild(0).gameObject.SetActive(false);
         victoryScreen.transform.GetChild(1).gameObject.SetActive(false);
         victoryScreen.SetActive(false);
