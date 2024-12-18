@@ -24,6 +24,13 @@ public class Chessboard : MonoBehaviour
     [SerializeField] private float deathSpacing = 0.25f;
     [SerializeField] private float deathPieceyOffset= 0.025f;
     [SerializeField] private GameObject victoryScreen;
+    [SerializeField] private AudioSource placePiece;
+    [SerializeField] private AudioSource illegalMove;
+    [SerializeField] private AudioSource castleMove;
+    [SerializeField] private AudioSource capturePiece;
+    [SerializeField] private AudioSource promotePiece;
+    [SerializeField] private AudioSource placeCheck;
+    [SerializeField] private AudioSource gameEnd;
 
     [Header("Prefabs && Materials")]
     [SerializeField] private GameObject[] prefabs;
@@ -383,8 +390,9 @@ public class Chessboard : MonoBehaviour
     }
 
     // Special Moves
-    private void ProcessSpecialMove()
+    private int ProcessSpecialMove()
     {
+        int specialMoveType = 0;
         if (specialMove == SpecialMove.EnPassant)
         {
             var newMove = moveList[moveList.Count - 1];
@@ -417,6 +425,7 @@ public class Chessboard : MonoBehaviour
                     chessPieces[enemyPawn.currentX, enemyPawn.currentY] = null;
                 }
             }
+            specialMoveType = 1;
         }
 
         if (specialMove == SpecialMove.Promotion)
@@ -446,6 +455,7 @@ public class Chessboard : MonoBehaviour
                     PositionSinglePiece(lastMove[1].x, lastMove[1].y);
                 }
             }
+            specialMoveType = 2;
         }
 
         if (specialMove == SpecialMove.Castling)
@@ -491,7 +501,9 @@ public class Chessboard : MonoBehaviour
                     chessPieces[7, 7] = null;
                 }
             }
+            specialMoveType = 3;
         }
+        return specialMoveType;
     }
 
     private void PreventCheck()
@@ -597,7 +609,7 @@ public class Chessboard : MonoBehaviour
         }
     }
 
-    private bool CheckForCheckmate()
+    private (bool isInCheck, bool isCheckmate) CheckForCheckmate()
     {
         var lastMove = moveList[moveList.Count - 1];
         int targetTeam = (chessPieces[lastMove[1].x, lastMove[1].y].team == 0) ? 1 : 0;
@@ -605,6 +617,8 @@ public class Chessboard : MonoBehaviour
         List<ChessPiece> attackingPieces = new List<ChessPiece>();
         List<ChessPiece> defendingPieces = new List<ChessPiece>();
         ChessPiece targetKing = null;
+
+        // Find all attacking and defending pieces, and locate the king
         for (int x = 0; x < TILE_COUNT_X; x++)
         {
             for (int y = 0; y < TILE_COUNT_Y; y++)
@@ -626,7 +640,8 @@ public class Chessboard : MonoBehaviour
                 }
             }
         }
-        // Is the king attacked right now?
+
+        // Collect all potential attacking moves
         List<Vector2Int> currentAvailableMoves = new List<Vector2Int>();
         for (int i = 0; i < attackingPieces.Count; i++)
         {
@@ -637,25 +652,42 @@ public class Chessboard : MonoBehaviour
             }
         }
 
-        // Are we in check right now?
-        if (ContainsValidMove(ref currentAvailableMoves, new Vector2Int(targetKing.currentX, targetKing.currentY)))
+        // Check if the king is under attack
+        bool isInCheck = ContainsValidMove(ref currentAvailableMoves, new Vector2Int(targetKing.currentX, targetKing.currentY));
+
+        // If the king is in check, check for valid moves to escape
+        if (isInCheck)
         {
-            // King is under attack, we can move something to help?
             for (int i = 0; i < defendingPieces.Count; i++)
             {
                 List<Vector2Int> defendingMoves = defendingPieces[i].GetAvailableMoves(ref chessPieces, TILE_COUNT_X, TILE_COUNT_Y);
-                // Since we're sending ref availableMoves, we will be deleting moves that are putting us in check
                 SimulateMoveForSinglePiece(defendingPieces[i], ref defendingMoves, targetKing);
 
-                if (defendingMoves.Count != 0)
+                if (defendingMoves.Count > 0)
                 {
-                    return false;
+                    // The king is in check, but there are valid moves to escape
+                    return (true, false);
                 }
             }
-            return true;
+            // No valid moves left; this is checkmate
+            return (true, true);
         }
 
-        return false;
+        // Check for stalemate: no valid moves but the king is not in check
+        for (int i = 0; i < defendingPieces.Count; i++)
+        {
+            List<Vector2Int> defendingMoves = defendingPieces[i].GetAvailableMoves(ref chessPieces, TILE_COUNT_X, TILE_COUNT_Y);
+            SimulateMoveForSinglePiece(defendingPieces[i], ref defendingMoves, targetKing);
+
+            if (defendingMoves.Count > 0)
+            {
+                // At least one valid move; the game continues
+                return (false, false);
+            }
+        }
+
+        // No valid moves, but the king is not in check: this is stalemate
+        return (false, true);
     }
 
     // Operations
@@ -676,8 +708,10 @@ public class Chessboard : MonoBehaviour
 
     private bool MoveTo(ChessPiece cp, int x, int y)
     {
+        int soundType = 1;
         if (!ContainsValidMove(ref availableMoves, new Vector2Int(x, y)))
         {
+            illegalMove.Play();
             return false;
         }
 
@@ -687,6 +721,7 @@ public class Chessboard : MonoBehaviour
             ChessPiece ocp = chessPieces[x, y];
             if (cp.team == ocp.team)
             {
+                illegalMove.Play();
                 return false;
             }
             // If its the enemy team
@@ -694,7 +729,12 @@ public class Chessboard : MonoBehaviour
             {
                 if (ocp.type == ChessPieceType.King)
                 {
+                    soundType = 2;
                     CheckMate(1);
+                }
+                if (soundType == 1)
+                {
+                    soundType = 3;
                 }
                 deadWhites.Add(ocp);
                 ocp.SetScale(new Vector3(deathSize, deathSize, deathSize));
@@ -707,7 +747,12 @@ public class Chessboard : MonoBehaviour
             {
                 if (ocp.type == ChessPieceType.King)
                 {
+                    soundType = 2;
                     CheckMate(0);
+                }
+                if (soundType == 1)
+                {
+                    soundType = 3;
                 }
                 deadBlacks.Add(ocp);
                 ocp.SetScale(new Vector3(deathSize, deathSize, deathSize));
@@ -731,10 +776,48 @@ public class Chessboard : MonoBehaviour
         isWhiteTurn = !isWhiteTurn;
         moveList.Add(new Vector2Int[] { previousPosition, new Vector2Int(x,y)});
 
-        ProcessSpecialMove();
-        if(CheckForCheckmate())
+        int specialMoveType = ProcessSpecialMove();
+        if (soundType == 1)
         {
-            CheckMate(cp.team);
+            if (specialMoveType == 1)
+            {
+                soundType = 3;
+            }
+            else if (specialMoveType == 2)
+            {
+                soundType = 5;
+            }
+            else if (specialMoveType == 3)
+            {
+                soundType = 6;
+            }
+        }
+        if (CheckForCheckmate() is var (isInCheck, isCheckmate))
+        {
+            if (isCheckmate)
+            {
+                soundType = 4; // Game over sound
+                CheckMate(cp.team); // Trigger checkmate logic
+            }
+            else if (isInCheck)
+            {
+                soundType = 2; // Check sound
+            }
+        }
+        switch (soundType)
+        {
+            case 1:
+                placePiece.Play(); break;
+            case 2: 
+                placeCheck.Play(); break;
+            case 3: 
+                capturePiece.Play(); break;
+            case 4:
+                gameEnd.Play(); break;
+            case 5:
+                promotePiece.Play(); break;
+            case 6:
+                castleMove.Play(); break;
         }
         return true;
     }
