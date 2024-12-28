@@ -2,12 +2,15 @@ using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using TMPro;
 
 public class SceneManagerVR : MonoBehaviour
 {
     public GameObject[] interactableObjects;
     public Canvas uiCanvas;
     public Button confirmationButton;
+    public TextMeshProUGUI sceneNameText;
+
     private GameObject selectedObject;
 
     void Start()
@@ -59,6 +62,48 @@ public class SceneManagerVR : MonoBehaviour
                 uiCanvas.gameObject.SetActive(true);
             }
         }
+
+        UpdateSceneNameText();
+    }
+
+    private void UpdateSceneNameText()
+    {
+        if (sceneNameText == null)
+        {
+            Debug.LogWarning("Scene name text UI is not assigned!");
+            return;
+        }
+
+        if (selectedObject == null)
+        {
+            sceneNameText.text = "No Scene Selected";
+            return;
+        }
+
+        for (int i = 0; i < interactableObjects.Length; i++)
+        {
+            if (selectedObject == interactableObjects[i])
+            {
+                switch (i)
+                {
+                    case 0:
+                        sceneNameText.text = "Customization Scene";
+                        break;
+                    case 1:
+                        sceneNameText.text = "Macao Scene";
+                        break;
+                    case 2:
+                        sceneNameText.text = "Chess Scene";
+                        break;
+                    default:
+                        sceneNameText.text = "Unknown Scene";
+                        break;
+                }
+                return;
+            }
+        }
+
+        sceneNameText.text = "No Scene Selected";
     }
 
     private void OnConfirmationButtonPressed()
