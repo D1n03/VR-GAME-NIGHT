@@ -6,11 +6,20 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 0
-    path: Assets/Scenes/SampleScene.unity
+    path: Assets/Black Whale Studio/VR Keyboard XRI/Scenes/DemoVRKeyboardUS.unity
     guid: 99c9720ab356a0642a771bea13969a05
+  - enabled: 1
+    path: Assets/Scenes/StartScene.unity
+    guid: a0f435fbe87546548a1f6ef1496746b4
   - enabled: 1
     path: Assets/Scenes/ChessScene.unity
     guid: a51805f29bb55644e812e8531d0ed4cd
+  - enabled: 1
+    path: Assets/Scenes/CustomizationScene.unity
+    guid: f872f9552b0206c429e5ad0dc0376c6f
+  - enabled: 1
+    path: Assets/Scenes/MacaoScene.unity
+    guid: 48ba84736f6664744ba8f124a8b09bd2
   m_configObjects:
     Unity.XR.Oculus.Settings: {fileID: 11400000, guid: 3235b14f74648bb41a400c02db601df8,
       type: 2}
