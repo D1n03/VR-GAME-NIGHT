@@ -4,6 +4,7 @@ using System.IO;
 using System.Collections.Generic;
 using TMPro;
 using Keyboard;
+using UnityEngine.SceneManagement;
 
 public class CustomizationManager : MonoBehaviour
 {
@@ -174,5 +175,10 @@ public class CustomizationManager : MonoBehaviour
             Debug.LogError($"Invalid color code: {hex}");
             return Color.white; // Default fallback color
         }
+    }
+
+    public void OnExitButton()
+    {
+        SceneManager.LoadScene("StartScene");
     }
 }

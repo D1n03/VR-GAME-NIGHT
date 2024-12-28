@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.OpenXR.Features.Interactions;
 
@@ -388,8 +389,7 @@ public class Chessboard : MonoBehaviour
 
     public void OnExitButton()
     {
-        // change this one for multiplayer and lobby integration
-        Application.Quit();
+        SceneManager.LoadScene("StartScene");
     }
 
     private void RemoveHighlightTiles()
