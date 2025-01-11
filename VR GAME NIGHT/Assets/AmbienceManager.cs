@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class AmbienceManager : MonoBehaviour
 {
@@ -100,5 +101,15 @@ public class AmbienceManager : MonoBehaviour
         {
             floorboardCreak.Play();
         }
+    }
+
+    public void OnResetButton()
+    {
+
+    }
+
+    public void OnExitButton()
+    {
+        SceneManager.LoadScene("StartScene");
     }
 }
