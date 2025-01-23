@@ -1,5 +1,7 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using Unity.VisualScripting;
 using Unity.XR.CoreUtils;
@@ -8,51 +10,46 @@ using UnityEngine.XR.Interaction.Toolkit;
 
 public class SpawnCards : MonoBehaviour
 {
-    public GameObject[] prefabToSpawn;
-    public Transform parentObject;
-    public GameObject holdPoint;
+    public GameObject[] cardsToSpawn;
+    public GameObject holdCardsObject;
+    public GameObject playedCardsObject;
     private HoldCards holdCards;
+    private PlayedCards playedCards;
+    private TextMeshPro textMeshPro;
     private readonly List<GameObject> cards = new();
     public float cardStackHeight = 0.05f;
-    private int CardCount => prefabToSpawn.Length;
+    private int CardCount => cardsToSpawn.Length;
     public Vector3 up = new(0.0f, 0.0f, 1.0f);
     public float CardInterval => cardStackHeight / CardCount;
+    public int takeCardCount = 0;
 
     void Spawn()
     {
-        holdCards = holdPoint.GetComponent<HoldCards>();
-        
         var cardPermutation = GetPermutation(CardCount);
-        if (prefabToSpawn != null && parentObject != null)
+        List<GameObject> spawnedCards = new();
+        for (int i = 0; i < CardCount; i++)
         {
-            for (int i = 0; i<CardCount; i++)
-            {
-                GameObject spawnedCard = prefabToSpawn[cardPermutation[i]];
-                spawnedCard.transform.SetParent(parentObject, false);
+            //get random card
+            GameObject spawnedCard = cardsToSpawn[cardPermutation[i]];
 
-                var collider = spawnedCard.AddComponent<MeshCollider>();
-                collider.convex = true;
-                collider.isTrigger = true;
+            //configure collider
+            var collider = spawnedCard.AddComponent<MeshCollider>();
+            collider.convex = true;
+            collider.isTrigger = true;
+            collider.providesContacts = true;
 
+            //extract card numbr and type in variables component
+            var name = spawnedCard.name;
+            var variables = spawnedCard.AddComponent<Variables>();
+            var cardType = name[..^2];
+            var cardNumber = int.Parse(name.Substring(name.Length - 2, 2));
+            variables.declarations.Set("type", cardType);
+            variables.declarations.Set("number", cardNumber);
 
-                spawnedCard.transform.localPosition = CardInterval * i * up;
-                spawnedCard.transform.localEulerAngles = new Vector3(-90.0f, 0.0f, 0.0f);
-                //spawnedObject.transform.localRotation = Quaternion.identity;
-
-                var name = spawnedCard.name;
-                var variables = spawnedCard.AddComponent<Variables>();
-                var cardType = name[..^2];
-                var cardNumber = int.Parse(name.Substring(name.Length - 2, 2));
-                variables.declarations.Set("type", cardType);
-                variables.declarations.Set("number", cardNumber);
-
-                cards.Add(spawnedCard);
-            }
+            spawnedCards.Add(spawnedCard);
         }
-        else
-        {
-            Debug.LogError("Prefab or parent object is not assigned!");
-        }
+
+        InsertCards(spawnedCards);
     }
 
     public static List<int> GetPermutation(int n)
@@ -77,47 +74,98 @@ public class SpawnCards : MonoBehaviour
         return numbers;
     }
 
-    // Start is called before the first frame update
+    void TakeCards(SelectEnterEventArgs arg)
+    {
+        var extractedCards = ExtractCards();
+        holdCards.InsertCardsInHand(extractedCards);
+    }
+
+    public List<GameObject> ExtractCards(int? count = null)
+    {
+        int extractCount = count ?? Math.Max(takeCardCount, 1);
+        if (takeCardCount > 0)
+        {
+            takeCardCount = 0;
+        }
+        if (extractCount >= cards.Count)
+        {
+            var unusedCards = playedCards.ExtractUnusedCards();
+            unusedCards.Reverse();
+            InsertCards(unusedCards);
+        }
+
+        var extractedCards = cards.TakeLast(extractCount).ToList();
+        cards.RemoveRange(cards.Count - extractCount, extractCount);
+
+        return extractedCards;
+    }
+
+    public void InsertCards(List<GameObject> cards)
+    {
+        foreach (var card in cards)
+        {
+            card.transform.SetParent(transform, false);
+            card.transform.localEulerAngles = new Vector3(-90.0f, 0.0f, 0.0f);
+        }
+        this.cards.InsertRange(0, cards);
+    }
+
     void Awake()
     {
+        holdCards = holdCardsObject.GetComponent<HoldCards>();
+        playedCards = playedCardsObject.GetComponent<PlayedCards>();
+        textMeshPro = transform.GetChild(0).GetComponent<TextMeshPro>();
+
         Spawn();
 
-
         var interactable = GetComponent<XRSimpleInteractable>();
-        interactable.selectEntered.AddListener(TakeCard);
+        interactable.selectEntered.AddListener(TakeCards);
 
     }
 
-    void TakeCard(SelectEnterEventArgs arg)
+    private void Start()
     {
-        GameObject card = ExtractCard();
-        if (card == null)
+        var startingCards = ExtractCards(5);
+        holdCards.InsertCardsInHand(startingCards);
+
+        /*
+        var firstCard = ExtractCards(1);
+        var card = firstCard.First();
+        var variables = card.GetComponent<Variables>();
+        var cardNumber = variables.declarations.Get<int>("number");
+
+        while (cardNumber == 1 || cardNumber == 2 || cardNumber == 3 || cardNumber == 4 || cardNumber == 7)
         {
-            return;
+            InsertCards(firstCard);
+            firstCard = ExtractCards(1);
+            card = firstCard.First();
+            variables = card.GetComponent<Variables>();
+            cardNumber = variables.declarations.Get<int>("number");
         }
 
-        holdCards.InsertCardInHand(card);
-    }
+        playedCards.PlaceCardOnTop(card);
+        */
 
-    public GameObject ExtractCard()
-    {
-        var lastIndex = cards.Count - 1;
-        if (lastIndex < 0)
+        
+        var aLotOfCards = ExtractCards(45);
+        foreach (var card in aLotOfCards)
         {
-            return null;
+            playedCards.PlaceCardOnTop(card);
         }
-        var card = cards[lastIndex];
-        cards.RemoveAt(lastIndex);
-        return card;
+        
     }
 
-    // Update is called once per frame
     void Update()
     {
+        // set the positions of the cards in the stack
         for (int i = 0; i < cards.Count; i++)
         {
             var card = cards[i];
             card.transform.localPosition = i * CardInterval * up;
+            //print(card.transform.localPosition + " " + i);
         }
+
+        textMeshPro.transform.localPosition = cards.Count * CardInterval * up;
+        textMeshPro.text = (takeCardCount == 0 ? "" : "+" + takeCardCount);
     }
 }

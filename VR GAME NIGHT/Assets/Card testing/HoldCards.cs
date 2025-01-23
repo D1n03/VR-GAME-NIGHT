@@ -9,14 +9,17 @@ public class HoldCards : MonoBehaviour
     private readonly List<GameObject> pivotPoints = new();
     public float rotationSpan = 45.0f;
     public float cardDepth = 0.0005f;
-    private int? selectedCardIndex = 0;//null;
+    private int? selectedCardIndex = 0;//null;//0
     public GameObject playedCardsPile;
     private PlayedCards playedCards;
     void Start()
     {
         playedCards = playedCardsPile.GetComponent<PlayedCards>();
+        /*
         var interactable = GetComponent<XRSimpleInteractable>();
         interactable.selectEntered.AddListener((SelectEnterEventArgs args) => PlaceCardDown() );
+        interactable.activated.AddListener((ActivateEventArgs args) => PlaceCardDown());
+        */
     }
 
     // Update is called once per frame
@@ -24,65 +27,114 @@ public class HoldCards : MonoBehaviour
     {
         for(int i = 0; i < pivotPoints.Count; i++)
         {
-            var intervalCount = pivotPoints.Count + 1;
             var pivotPoint = pivotPoints[i];
-            pivotPoint.transform.localEulerAngles = new Vector3(0.0f, 180.0f, - ((i + 1) * (rotationSpan / intervalCount) - rotationSpan * 0.5f));
-            var position = pivotPoint.transform.localPosition;
+            var intervalCount = pivotPoints.Count + 1;
+
+            //set pivot rotation and position
+            pivotPoint.transform.localEulerAngles = new Vector3(
+                0.0f, 
+                180.0f,
+                - ((i + 1) * (rotationSpan / intervalCount) - rotationSpan * 0.5f)
+            );
+
+            pivotPoint.transform.localPosition = new Vector3(
+                0.0f,
+                i == selectedCardIndex ? -0.03f : 0.0f,
+                (i - pivotPoints.Count * 0.5f) * cardDepth
+            );
+
+            //update index variable
             var variables = pivotPoint.GetComponent<Variables>();
             variables.declarations.Set("index", i);
-            position.x = 0.0f;
-            position.y = i == selectedCardIndex ? - 0.03f : 0.0f;
-            position.z = (i - pivotPoints.Count * 0.5f) * cardDepth;
-            pivotPoint.transform.localPosition = position;
+        }
+
+        if (Input.GetKeyDown(KeyCode.P))
+        {
+            PlaceCardDown();
+        }
+
+        if (Input.GetKeyDown(KeyCode.LeftArrow))
+        {
+            selectedCardIndex -= 1;
+        }
+
+        if (Input.GetKeyDown(KeyCode.RightArrow))
+        {
+            selectedCardIndex += 1;
+        }
+
+        if (selectedCardIndex < 0)
+        {
+            selectedCardIndex = 0;
+        }
+
+        if (selectedCardIndex >= pivotPoints.Count)
+        {
+            selectedCardIndex = pivotPoints.Count - 1;
         }
     }
 
-    public void InsertCardInHand(GameObject card)
+    public void InsertCardsInHand(List<GameObject> cards)
     {
+        foreach (var card in cards)
+        {
+            InsertSingleCardInHand(card);
+        }
+    }
+    private void InsertSingleCardInHand(GameObject card)
+    {
+        //create new pivot point
         var pivotPoint = new GameObject("Pivot Point");
 
+        //create parent structure self -> pivot point -> card
         pivotPoint.transform.SetParent(transform, false);
         card.transform.SetParent(pivotPoint.transform, false);
 
-        var offset = new Vector3(0.0f, -0.2f, 0.0f);
-
+        //set positions for pivot point and card
         pivotPoint.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
-        card.transform.localPosition = offset;
+        card.transform.localPosition = new Vector3(0.0f, -0.2f, 0.0f);
 
-        /*
+        //highlight hovered card
         var xrInteractable = pivotPoint.AddComponent<XRSimpleInteractable>();
         xrInteractable.hoverEntered.AddListener((HoverEnterEventArgs args) => HoverCard(pivotPoint));
         xrInteractable.hoverExited.AddListener((HoverExitEventArgs args) => HoverCard(pivotPoint));
-        
+
+        var mesh = card.GetComponent<MeshCollider>();
+        xrInteractable.colliders.Add(mesh);
         var rigidBody = pivotPoint.AddComponent<Rigidbody>();
         rigidBody.useGravity = false;
-        */
+        
 
-
-        var variables = pivotPoint.AddComponent<Variables>();
+        //add variables component for index
+        pivotPoint.AddComponent<Variables>();
 
         pivotPoints.Add(pivotPoint);
-
-        /*
-        var cardVariables = card.GetComponent<Variables>();
-        var cardType = cardVariables.declarations.Get<string>("type");
-        var cardNumber = cardVariables.declarations.Get<int>("number");
-        Debug.Log("type: " + cardType + " number: " + cardNumber);
-        */
-
     }
 
     void HoverCard(GameObject pivotPoint)
     {
+        Debug.Log("called");
         var variables = pivotPoint.GetComponent<Variables>();
         var index = variables.declarations.Get<int>("index");
 
         selectedCardIndex = index;
     }
 
-    //GameObject GetCurrentCard()
+    GameObject GetSelectedCard()
+    {
+        if (selectedCardIndex == null)
+        {
+            return null;
+        }
 
-    GameObject ExtractCard()
+        int index = selectedCardIndex ?? -1;
+        var pivotPoint = pivotPoints[index];
+        var card = pivotPoint.transform.GetChild(0).gameObject;
+
+        return card;
+    }
+
+    GameObject ExtractSelectedCard()
     {
         if (selectedCardIndex == null)
         {
@@ -91,24 +143,33 @@ public class HoldCards : MonoBehaviour
 
         int index = selectedCardIndex ?? -1;
 
+        //extract pivot point
         var pivotPoint = pivotPoints[index];
         pivotPoints.RemoveAt(index);
+
+        //extract card
         var card = pivotPoint.transform.GetChild(0).gameObject;
         card.transform.SetParent(transform, true);
+
+        //destroy pivot point
         Destroy(pivotPoint);
+
         return card;
     }
 
     void PlaceCardDown()
     {
         Debug.Log("Trying to place card");
-        var card = ExtractCard();
-        if (card == null)
+        var card = GetSelectedCard();
+        if (playedCards.CanPlaceCard(card))
         {
-            Debug.Log("Null card");
-            return;
+            ExtractSelectedCard();
+            playedCards.PlaceCardOnTop(card);
+            Debug.Log("Placed card");
         }
-        Debug.Log("Placed card");
-        playedCards.PlaceCardOnTop(card);
+        else
+        {
+            Debug.Log("Invalid card");
+        }
     }
 }
