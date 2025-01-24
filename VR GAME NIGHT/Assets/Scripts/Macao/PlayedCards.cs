@@ -20,7 +20,6 @@ public class PlayedCards : MonoBehaviour
         suits.SetActive(false);
         foreach (var xrSimpleInteractable in suits.transform.GetComponentsInChildren<XRSimpleInteractable>())
         {
-            print(xrSimpleInteractable.gameObject.name);
             xrSimpleInteractable.hoverEntered.AddListener((HoverEnterEventArgs args) =>
             {
                 wildCardType = xrSimpleInteractable.gameObject.name;

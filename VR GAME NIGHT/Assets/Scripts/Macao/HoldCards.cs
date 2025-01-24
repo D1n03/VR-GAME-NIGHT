@@ -187,6 +187,10 @@ public class HoldCards : MonoBehaviour
     void PlaceCardDown()
     {
         var card = GetSelectedCard();
+        if (card == null)
+        {
+            return;
+        }
         if (playedCards.CanPlaceCard(card) && skipTurnCount == 0)
         {
             if (CanBeJinxed)
