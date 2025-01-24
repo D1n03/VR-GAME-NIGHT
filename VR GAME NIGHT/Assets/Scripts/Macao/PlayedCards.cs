@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.VisualScripting;
@@ -58,7 +57,8 @@ public class PlayedCards : MonoBehaviour
             case 1:
                 spawnCards.skipTurnCount += 1;
                 break;
-            case 2: case 3:
+            case 2:
+            case 3:
                 spawnCards.takeCardCount += cardNumber;
                 break;
             case 4:
@@ -83,7 +83,7 @@ public class PlayedCards : MonoBehaviour
         {
             return false;
         }
-  
+
         var topCard = cards[^1];
         ExtractNumberAndTypeFromCard(card, out int cardNumber, out string cardType);
         ExtractNumberAndTypeFromCard(topCard, out int topCardNumber, out string topCardType);
@@ -105,7 +105,7 @@ public class PlayedCards : MonoBehaviour
         {
             return cardType == topCardType || cardNumber == topCardNumber;
         }
-        
+
     }
 
     private void ExtractNumberAndTypeFromCard(GameObject card, out int cardNumber, out string cardType)

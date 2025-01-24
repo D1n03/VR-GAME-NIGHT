@@ -78,7 +78,7 @@ public class HoldCards : MonoBehaviour
         }
 
         textMeshPro.text = skipTurnCount == 0 ? "" : $"Wait {skipTurnCount} turn{(skipTurnCount == 1 ? "" : "s")}";
-        
+
         if (pivotPoints.Count == 0)
         {
             textMeshPro.text = "You won!";

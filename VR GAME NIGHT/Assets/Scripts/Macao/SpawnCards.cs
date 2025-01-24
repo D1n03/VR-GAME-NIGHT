@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -167,7 +166,7 @@ public class SpawnCards : MonoBehaviour
         var startingCards = ExtractCards(5);
         holdCards.InsertCardsInHand(startingCards);
 
-        
+
         var firstCard = ExtractCards(1);
         var card = firstCard.First();
         var variables = card.GetComponent<Variables>();
