@@ -1,7 +1,8 @@
-using System.Collections;
+﻿using System;
 using System.Collections.Generic;
-using Unity.VisualScripting;
+using TMPro;
 using UnityEngine;
+using UnityEngine.XR;
 using UnityEngine.XR.Interaction.Toolkit;
 
 public class HoldCards : MonoBehaviour
@@ -9,68 +10,114 @@ public class HoldCards : MonoBehaviour
     private readonly List<GameObject> pivotPoints = new();
     public float rotationSpan = 45.0f;
     public float cardDepth = 0.0005f;
-    private int? selectedCardIndex = 0;//null;//0
-    public GameObject playedCardsPile;
+    private int? selectedCardIndex = null;
+    public GameObject playedCardsObject;
+    public GameObject spawnCardsObject;
+    public GameObject selectPoint;
+    public GameObject macaoButton;
     private PlayedCards playedCards;
+    private SpawnCards spawnCards;
+    public float selectCardMaxDistance = 0.1f;
+    private Vector3 cardOffset = new(0.0f, -0.2f, 0.0f);
+    private InputDevice rightController;
+    public int skipTurnCount = 0;
+    private TextMeshPro textMeshPro;
+    private long? jinxStartTime = null;
+    private readonly long jinxDuration = 10_000;
+    public bool CanBeJinxed => jinxStartTime.HasValue;
+
     void Start()
     {
-        playedCards = playedCardsPile.GetComponent<PlayedCards>();
-        /*
-        var interactable = GetComponent<XRSimpleInteractable>();
-        interactable.selectEntered.AddListener((SelectEnterEventArgs args) => PlaceCardDown() );
-        interactable.activated.AddListener((ActivateEventArgs args) => PlaceCardDown());
-        */
+        playedCards = playedCardsObject.GetComponent<PlayedCards>();
+        spawnCards = spawnCardsObject.GetComponent<SpawnCards>();
+        rightController = InputDevices.GetDeviceAtXRNode(XRNode.RightHand);
+        textMeshPro = transform.GetChild(0).GetComponent<TextMeshPro>();
+        macaoButton.SetActive(false);
+
+        var xrSimpleInteractable = macaoButton.GetComponentInChildren<XRSimpleInteractable>();
+        xrSimpleInteractable.hoverEntered.AddListener((HoverEnterEventArgs args) =>
+        {
+            jinxStartTime = null;
+            macaoButton.SetActive(false);
+        });
     }
 
-    // Update is called once per frame
     void Update()
     {
-        for(int i = 0; i < pivotPoints.Count; i++)
+        for (int i = 0; i < pivotPoints.Count; i++)
         {
             var pivotPoint = pivotPoints[i];
             var intervalCount = pivotPoints.Count + 1;
 
             //set pivot rotation and position
             pivotPoint.transform.localEulerAngles = new Vector3(
-                0.0f, 
+                0.0f,
                 180.0f,
-                - ((i + 1) * (rotationSpan / intervalCount) - rotationSpan * 0.5f)
+                -((i + 1) * (rotationSpan / intervalCount) - rotationSpan * 0.5f)
             );
 
             pivotPoint.transform.localPosition = new Vector3(
                 0.0f,
-                i == selectedCardIndex ? -0.03f : 0.0f,
+                0.0f,
                 (i - pivotPoints.Count * 0.5f) * cardDepth
             );
 
-            //update index variable
-            var variables = pivotPoint.GetComponent<Variables>();
-            variables.declarations.Set("index", i);
+            // set card position
+            var card = pivotPoint.transform.GetChild(0);
+            var position = cardOffset;
+            if (i == selectedCardIndex)
+                position.y += -0.03f;
+            card.transform.localPosition = position;
         }
 
-        if (Input.GetKeyDown(KeyCode.P))
+        FindSelectedCard();
+
+        if ((rightController.TryGetFeatureValue(CommonUsages.primaryButton, out bool isPressed) && isPressed) || Input.GetKeyDown(KeyCode.B))
         {
             PlaceCardDown();
         }
 
-        if (Input.GetKeyDown(KeyCode.LeftArrow))
+        textMeshPro.text = skipTurnCount == 0 ? "" : $"Wait {skipTurnCount} turn{(skipTurnCount == 1 ? "" : "s")}";
+        
+        if (pivotPoints.Count == 0)
         {
-            selectedCardIndex -= 1;
+            textMeshPro.text = "You won!";
         }
 
-        if (Input.GetKeyDown(KeyCode.RightArrow))
+        if (jinxStartTime.HasValue)
         {
-            selectedCardIndex += 1;
+            var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            if (now - jinxStartTime.Value >= jinxDuration)
+            {
+                JinxSelf();
+            }
         }
+    }
 
-        if (selectedCardIndex < 0)
-        {
-            selectedCardIndex = 0;
-        }
+    public void JinxSelf()
+    {
+        var extractedCards = spawnCards.ExtractCards(5);
+        InsertCardsInHand(extractedCards);
+        jinxStartTime = null;
+        macaoButton.SetActive(false);
+    }
 
-        if (selectedCardIndex >= pivotPoints.Count)
+    private void FindSelectedCard()
+    {
+        // find nearest card to tip of the fingers
+        selectedCardIndex = null;
+        var minDist = 0.0f;
+        for (int i = 0; i < pivotPoints.Count; i++)
         {
-            selectedCardIndex = pivotPoints.Count - 1;
+            var dist = Vector3.Distance(pivotPoints[i].transform.GetChild(1).position, selectPoint.transform.position);
+            if (dist < selectCardMaxDistance)
+            {
+                if (selectedCardIndex == null || dist < minDist)
+                {
+                    selectedCardIndex = i;
+                    minDist = dist;
+                }
+            }
         }
     }
 
@@ -85,39 +132,19 @@ public class HoldCards : MonoBehaviour
     {
         //create new pivot point
         var pivotPoint = new GameObject("Pivot Point");
+        var cardCenter = new GameObject("Card Center");
 
-        //create parent structure self -> pivot point -> card
+        //create parent structure self -> pivot point -> card, card center
         pivotPoint.transform.SetParent(transform, false);
         card.transform.SetParent(pivotPoint.transform, false);
+        cardCenter.transform.SetParent(pivotPoint.transform, false);
 
-        //set positions for pivot point and card
+        //set positions for pivot point, card and card center
         pivotPoint.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
-        card.transform.localPosition = new Vector3(0.0f, -0.2f, 0.0f);
-
-        //highlight hovered card
-        var xrInteractable = pivotPoint.AddComponent<XRSimpleInteractable>();
-        xrInteractable.hoverEntered.AddListener((HoverEnterEventArgs args) => HoverCard(pivotPoint));
-        xrInteractable.hoverExited.AddListener((HoverExitEventArgs args) => HoverCard(pivotPoint));
-
-        var mesh = card.GetComponent<MeshCollider>();
-        xrInteractable.colliders.Add(mesh);
-        var rigidBody = pivotPoint.AddComponent<Rigidbody>();
-        rigidBody.useGravity = false;
-        
-
-        //add variables component for index
-        pivotPoint.AddComponent<Variables>();
+        card.transform.localPosition = cardOffset;
+        cardCenter.transform.localPosition = cardOffset;
 
         pivotPoints.Add(pivotPoint);
-    }
-
-    void HoverCard(GameObject pivotPoint)
-    {
-        Debug.Log("called");
-        var variables = pivotPoint.GetComponent<Variables>();
-        var index = variables.declarations.Get<int>("index");
-
-        selectedCardIndex = index;
     }
 
     GameObject GetSelectedCard()
@@ -141,7 +168,7 @@ public class HoldCards : MonoBehaviour
             return null;
         }
 
-        int index = selectedCardIndex ?? -1;
+        int index = selectedCardIndex.Value;
 
         //extract pivot point
         var pivotPoint = pivotPoints[index];
@@ -159,13 +186,22 @@ public class HoldCards : MonoBehaviour
 
     void PlaceCardDown()
     {
-        Debug.Log("Trying to place card");
         var card = GetSelectedCard();
-        if (playedCards.CanPlaceCard(card))
+        if (playedCards.CanPlaceCard(card) && skipTurnCount == 0)
         {
+            if (CanBeJinxed)
+            {
+                JinxSelf();
+                return;
+            }
             ExtractSelectedCard();
             playedCards.PlaceCardOnTop(card);
-            Debug.Log("Placed card");
+
+            if (pivotPoints.Count == 1)
+            {
+                jinxStartTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                macaoButton.SetActive(true);
+            }
         }
         else
         {

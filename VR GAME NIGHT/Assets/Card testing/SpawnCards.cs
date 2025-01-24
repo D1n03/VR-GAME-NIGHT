@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,9 +19,10 @@ public class SpawnCards : MonoBehaviour
     private readonly List<GameObject> cards = new();
     public float cardStackHeight = 0.05f;
     private int CardCount => cardsToSpawn.Length;
-    public Vector3 up = new(0.0f, 0.0f, 1.0f);
+    private Vector3 up = new(0.0f, 0.0f, 1.0f);
     public float CardInterval => cardStackHeight / CardCount;
     public int takeCardCount = 0;
+    public int skipTurnCount = 0;
 
     void Spawn()
     {
@@ -37,6 +38,10 @@ public class SpawnCards : MonoBehaviour
             collider.convex = true;
             collider.isTrigger = true;
             collider.providesContacts = true;
+
+            var rigidBody = spawnedCard.AddComponent<Rigidbody>();
+            rigidBody.useGravity = false;
+            rigidBody.constraints = RigidbodyConstraints.FreezeAll;
 
             //extract card numbr and type in variables component
             var name = spawnedCard.name;
@@ -76,26 +81,60 @@ public class SpawnCards : MonoBehaviour
 
     void TakeCards(SelectEnterEventArgs arg)
     {
-        var extractedCards = ExtractCards();
-        holdCards.InsertCardsInHand(extractedCards);
-    }
+        if (playedCards.choosingWildCardType)
+            return;
 
-    public List<GameObject> ExtractCards(int? count = null)
-    {
-        int extractCount = count ?? Math.Max(takeCardCount, 1);
+        if (holdCards.CanBeJinxed)
+        {
+            holdCards.JinxSelf();
+            return;
+        }
+
+        if (skipTurnCount > 0)
+        {
+            holdCards.skipTurnCount = skipTurnCount;
+            skipTurnCount = 0;
+        }
+
+        int? extractCount = null;
+        if (holdCards.skipTurnCount > 0)
+        {
+            extractCount = 0;
+        }
+
+        extractCount ??= Math.Max(takeCardCount, 1);
         if (takeCardCount > 0)
         {
             takeCardCount = 0;
         }
-        if (extractCount >= cards.Count)
+
+        var extractedCards = ExtractCards(extractCount.Value);
+        holdCards.InsertCardsInHand(extractedCards);
+
+        if (holdCards.skipTurnCount > 0)
+        {
+            holdCards.skipTurnCount -= 1;
+        }
+    }
+
+    public List<GameObject> ExtractCards(int count)
+    {
+        if (count <= 0)
+        {
+            return new();
+        }
+
+        if (count >= cards.Count)
         {
             var unusedCards = playedCards.ExtractUnusedCards();
             unusedCards.Reverse();
             InsertCards(unusedCards);
         }
 
-        var extractedCards = cards.TakeLast(extractCount).ToList();
-        cards.RemoveRange(cards.Count - extractCount, extractCount);
+        count = Math.Min(count, cards.Count);
+
+        var extractedCards = cards.TakeLast(count).ToList();
+        cards.RemoveRange(cards.Count - count, count);
 
         return extractedCards;
     }
@@ -128,7 +167,7 @@ public class SpawnCards : MonoBehaviour
         var startingCards = ExtractCards(5);
         holdCards.InsertCardsInHand(startingCards);
 
-        /*
+        
         var firstCard = ExtractCards(1);
         var card = firstCard.First();
         var variables = card.GetComponent<Variables>();
@@ -144,15 +183,6 @@ public class SpawnCards : MonoBehaviour
         }
 
         playedCards.PlaceCardOnTop(card);
-        */
-
-        
-        var aLotOfCards = ExtractCards(45);
-        foreach (var card in aLotOfCards)
-        {
-            playedCards.PlaceCardOnTop(card);
-        }
-        
     }
 
     void Update()
@@ -166,6 +196,7 @@ public class SpawnCards : MonoBehaviour
         }
 
         textMeshPro.transform.localPosition = cards.Count * CardInterval * up;
-        textMeshPro.text = (takeCardCount == 0 ? "" : "+" + takeCardCount);
+        textMeshPro.text = takeCardCount == 0 ? "" : $"+{takeCardCount}";
+        textMeshPro.text += skipTurnCount == 0 ? "" : $"-{skipTurnCount}";
     }
 }
